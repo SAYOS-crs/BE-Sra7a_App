@@ -1,0 +1,28 @@
+{
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mongoose": "^9.3.1"
+  },
+  "name": "sra7a_app",
+  "version": "1.0.0",
+  "main": "app.js",
+  "type": "module",
+  "devDependencies": {},
+  "scripts": {
+    "dev": "node --watch app.js "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SAYOS-crs/Sra7a_App.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SAYOS-crs/Sra7a_App/issues"
+  },
+  "homepage": "https://github.com/SAYOS-crs/Sra7a_App#readme",
+  "description": ""
+}
