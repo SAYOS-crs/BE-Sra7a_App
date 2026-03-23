@@ -1,38 +1,43 @@
 import { UserModel } from "../../DB/index.js";
-import { FindOne, InsertOne } from "../../Utils/repository/user.repository.js";
-import { ErrorRespons } from "../../Utils/responses/error.respons.js";
-import { SuccessRespons } from "../../Utils/responses/success.respons.js";
-import { Decrypt, Encrypt } from "../../Utils/security/encryption.service.js";
-import { Compare, Hash } from "../../Utils/security/hash.service.js";
+import {
+  EncryptionService,
+  ErrorRespons,
+  HashingService,
+  SuccessRespons,
+  UserServices,
+} from "../../Utils/index.js";
 
 export const Login = async (req, res) => {
   try {
     const { Email, Password } = req.body;
 
-    const result = await FindOne({ module: UserModel, filter: { Email } });
+    const result = await UserServices.FindOne({
+      module: UserModel,
+      filter: { Email },
+    });
     if (!result) {
-      return ErrorRespons({
+      return ErrorRespons.ErrorRespons({
         res,
         ststus: 409,
         Error: "email or password invalid",
       });
     }
 
-    const ComparePassword = await Compare({
+    const ComparePassword = await HashingService.Compare({
       data: Password,
       cipher: result.Password,
     });
     if (!ComparePassword) {
-      return ErrorRespons({
+      return ErrorRespons.ErrorRespons({
         res,
         ststus: 409,
         Error: "email or password invalid",
       });
     }
-    result.Phone = await Decrypt(result.Phone);
-    return SuccessRespons({ res, data: result });
+    result.Phone = await EncryptionService.Decrypt(result.Phone);
+    return SuccessRespons.SuccessRespons({ res, data: result });
   } catch (error) {
-    return ErrorRespons({
+    return ErrorRespons.ErrorRespons({
       res,
       ststus: 500,
       Error: "internal server error",
@@ -45,26 +50,26 @@ export const SignUp = async (req, res) => {
   const data = req.body;
   try {
     const { Email } = data;
-    const MatchedEmail = await FindOne({
+    const MatchedEmail = await UserServices.FindOne({
       module: UserModel,
       filter: { Email },
       select: "-_id",
     });
 
     if (MatchedEmail) {
-      return ErrorRespons({
+      return ErrorRespons.ErrorRespons({
         res,
         ststus: 409,
         Error: "Email already exist",
       });
     }
-    data.Password = await Hash(data.Password);
-    data.Phone = await Encrypt(data.Phone);
+    data.Password = await HashingService.Hash(data.Password);
+    data.Phone = await EncryptionService.Encrypt(data.Phone);
 
-    const result = await InsertOne({ module: UserModel, data });
-    SuccessRespons({ res, data: result });
+    const result = await UserServices.InsertOne({ module: UserModel, data });
+    SuccessRespons.SuccessRespons({ res, data: result });
   } catch (error) {
-    return ErrorRespons({
+    return ErrorRespons.ErrorRespons({
       res,
       ststus: 500,
       Error: "internal server error",

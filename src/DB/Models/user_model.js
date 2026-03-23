@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Genders, Providers } from "../../Utils/index.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -29,13 +30,13 @@ const UserSchema = new mongoose.Schema(
     // enumes
     Gender: {
       type: String,
-      enum: ["male", "female"],
-      default: "male",
+      enum: Object.values(Genders),
+      default: Genders.Male,
     },
     Providers: {
       type: Number,
-      enum: [0, 1, 2, 3],
-      default: 0,
+      enum: Object.values(Providers),
+      default: Providers.system,
     },
     // Pictcher
     ProfilePictcher: String,
