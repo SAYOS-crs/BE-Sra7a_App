@@ -51,7 +51,7 @@ export const SignUp = async (req, res) => {
   if (MatchedEmail) {
     throw ConflictException({
       status: 409,
-      massage: "Email already exist",
+      message: "Email already exist",
     });
   }
   data.Password = await HashingService.Hash(data.Password);
@@ -66,7 +66,7 @@ export const refreshToken = async (req, res) => {
   const result = await RenewRefrshAndAccessTokens(req.headers.authorization);
   return SuccessRespons({
     res,
-    massage: "token refreshed successfly",
+    message: "token refreshed successfly",
     data: result,
   });
 };
@@ -87,7 +87,7 @@ export const Google_social_provider = async (req, res) => {
     const Tokens = await GeneratCredentials(user);
     return SuccessRespons({
       res,
-      massage: "loged in Successfly with Google Account ",
+      message: "loged in Successfly with Google Account ",
       data: Tokens,
     });
   }
@@ -106,7 +106,7 @@ export const Google_social_provider = async (req, res) => {
   const Tokens = await GeneratCredentials(result);
   return SuccessRespons({
     res,
-    massage: "signed up with Google Account Successfly ",
+    message: "signed up with Google Account Successfly ",
     data: Tokens,
   });
 };

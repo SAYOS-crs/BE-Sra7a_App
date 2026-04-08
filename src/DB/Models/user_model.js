@@ -28,6 +28,12 @@ const UserSchema = new mongoose.Schema(
         return this.Providers == ProviderEnum.system;
       },
     },
+    ConfirmPassword: {
+      type: String,
+      required: function () {
+        return this.Providers == ProviderEnum.system;
+      },
+    },
     Phone: String,
     // enumes
     Roll: {
