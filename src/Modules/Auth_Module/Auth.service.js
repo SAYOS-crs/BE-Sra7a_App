@@ -14,8 +14,17 @@ import { Compare } from "../../Utils/security/hash.service.js";
 import { GeneratCredentials } from "../../Utils/security/token/token.controller.js";
 import { RenewRefrshAndAccessTokens } from "../../Utils/security/token/refreshToken.service.js";
 import VerifyGoogleToken from "../../Utils/providers/Google.js";
-import { FindOne, InsertOne } from "../../Utils/repository/repository.js";
-import { ProviderEnum, RollEnum } from "../../Utils/enums/Enums.js";
+import {
+  FindOne,
+  FindOneByIdAndUpdate,
+  InsertOne,
+} from "../../Utils/repository/repository.js";
+import {
+  LogoutFlags,
+  ProviderEnum,
+  RollEnum,
+} from "../../Utils/enums/Enums.js";
+import TokenModel from "../../DB/Models/token_model.js";
 // ------------------- login end point ---------------------------
 export const Login = async (req, res) => {
   const { Email, Password } = req.body;
@@ -59,6 +68,34 @@ export const SignUp = async (req, res) => {
 
   const result = await UserServices.InsertOne({ module: UserModel, data });
   return SuccessRespons({ res, data: result });
+};
+// --------------------- Logout ------------------------------
+export const Logout = async (req, res) => {
+  const { flag } = req.body;
+  let status;
+
+  switch (flag) {
+    case LogoutFlags.logout:
+      await InsertOne({
+        module: TokenModel,
+        data: {
+          jti: req.decoded.jti,
+          userId: req.user.id,
+          expirIn: req.decoded.exp * 1000,
+        },
+      });
+      status = 201;
+      break;
+    case LogoutFlags.logoutFromAll:
+      await FindOneByIdAndUpdate({
+        module: UserModel,
+        id: req.user.id,
+        data: { ChangeCredentials: Date.now() },
+      });
+      status = 200;
+      break;
+  }
+  return SuccessRespons({ res, status, massage: "User Loged out successfly" });
 };
 // ------------------- refresh token end point --------------------
 export const refreshToken = async (req, res) => {

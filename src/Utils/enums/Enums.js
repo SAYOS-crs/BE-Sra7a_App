@@ -10,3 +10,7 @@ export const ProviderEnum = {
   system: 0,
   google: 1,
 };
+export const LogoutFlags = {
+  logout: "logout",
+  logoutFromAll: "logoutFromAll",
+};

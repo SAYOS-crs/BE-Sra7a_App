@@ -4,7 +4,11 @@ import { SignatureRoll, SignatureType } from "../Utils/enums/Token.Enum.js";
 import { FindOne } from "../Utils/repository/repository.js";
 import { GetSignature } from "../Utils/security/token/signature.service.js";
 import { VerifyToken } from "../Utils/security/token/token.service.js";
-import { NotFoundException } from "../Utils/responses/error.respons.js";
+import {
+  NotFoundException,
+  unauthorizedexception,
+} from "../Utils/responses/error.respons.js";
+import TokenModel from "../DB/Models/token_model.js";
 
 export const decodeToken = async ({
   Authorization,
@@ -25,10 +29,32 @@ export const decodeToken = async ({
         : signature.RefreshSignature,
   });
   // 3. find by id
+
+  // -- search if the token is revoked
+  const isTokenRevoked = await FindOne({
+    module: TokenModel,
+    filter: { jti: decoded.jti },
+  });
+
+  if (isTokenRevoked) {
+    throw unauthorizedexception({ message: "Token is Revoked" });
+  }
+
   const user = await FindOne({
     module: UserModel,
     filter: { _id: decoded.id },
   });
+  // check if the token time is before the ChangeCredentials or after
+  // after = meen the token created after the ChangeCredentials has ben set / updated > valid token
+  // before = meen the token created before the ChangeCredentials has set > invalid token
+  if (
+    new Date(user.ChangeCredentials).getTime() >
+    new Date(decoded.iat * 1000).getTime()
+  ) {
+    throw unauthorizedexception({
+      message: "Credentials Time not matches the iat of token",
+    });
+  }
   // 4. return user in req.user
   return { user, decoded };
 };

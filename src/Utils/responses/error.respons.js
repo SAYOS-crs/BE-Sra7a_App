@@ -32,17 +32,20 @@ export const ForbiddenException = ({
 }) => {
   return ErrorRespons({ message, status: 403, extra });
 };
-
+export const unauthorizedexception = ({
+  message = "unauthorizedexception",
+  extra = undefined,
+}) => {
+  return ErrorRespons({ message, status: 401, extra });
+};
 // global error
 export const GlobalError = (error, req, res, next) => {
   const status = error.status ?? 500;
 
-  return res
-    .status(status)
-    .json({
-      message: error.message,
-      extra: error.extra,
-      stack: error.stack,
-      status: status,
-    });
+  return res.status(status).json({
+    message: error.message,
+    extra: error.extra,
+    stack: error.stack,
+    status: status,
+  });
 };

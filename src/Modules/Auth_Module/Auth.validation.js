@@ -1,5 +1,10 @@
 import joi from "joi";
-import { GenderEnum, ProviderEnum, RollEnum } from "../../Utils/enums/Enums.js";
+import {
+  GenderEnum,
+  LogoutFlags,
+  ProviderEnum,
+  RollEnum,
+} from "../../Utils/enums/Enums.js";
 import generalFilds from "../../Utils/validation/General_Filds.js";
 
 export const SignupSchema = {
@@ -34,4 +39,19 @@ export const LoginSchema = {
   }),
   headers: joi.object({}).unknown(true),
   params: joi.object({}).unknown(true),
+};
+export const LogoutSchema = {
+  body: joi
+    .object({
+      flag: joi
+        .string()
+        .required()
+        .valid(...Object.values(LogoutFlags)),
+    })
+    .unknown(true),
+  headers: joi
+    .object({
+      authorization: joi.string().required(),
+    })
+    .unknown(true),
 };
