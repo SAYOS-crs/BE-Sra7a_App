@@ -55,7 +55,10 @@ const UserSchema = new mongoose.Schema(
     ProfilePictcher: String,
     CoverPictchers: [String],
     // Date
-    ConfirmEmail: Date,
+    ConfirmEmail: {
+      type: Boolean,
+      default: false,
+    },
     ChangeCredentials: Date,
   },
   {

@@ -9,6 +9,7 @@ import { SuccessRespons } from "../../Utils/responses/success.respons.js";
 import {
   BadRequstException,
   ConflictException,
+  NotFoundException,
 } from "../../Utils/responses/error.respons.js";
 import { Compare } from "../../Utils/security/hash.service.js";
 import { GeneratCredentials } from "../../Utils/security/token/token.controller.js";
@@ -16,6 +17,7 @@ import { RenewRefrshAndAccessTokens } from "../../Utils/security/token/refreshTo
 import VerifyGoogleToken from "../../Utils/providers/Google.js";
 import {
   FindOne,
+  FindOneAndUpdate,
   FindOneByIdAndUpdate,
   InsertOne,
 } from "../../Utils/repository/repository.js";
@@ -26,12 +28,20 @@ import {
 } from "../../Utils/enums/Enums.js";
 import TokenModel from "../../DB/Models/token_model.js";
 import {
+  del,
+  Hget_all,
+  Hset,
   RedisKeyPrefix,
+  RedisOTPprefix,
   RedisUserCredentials,
   set,
   update,
 } from "../../Utils/repository/radis.repository.js";
-import { ACCESS_Token_Time } from "../../../config/config.service.js";
+import { ACCESS_Token_Time, OTP_TTL } from "../../../config/config.service.js";
+import { GenerateOTP } from "../../Utils/security/otp/otp.service.js";
+import { EmailEvent } from "../../Utils/email/email.Event.js";
+import { EmailSubject } from "../../Utils/email/email.subject.js";
+import OTP_Templet from "../../Utils/email/email.templet.js";
 // ------------------- login end point ---------------------------
 export const Login = async (req, res) => {
   const { Email, Password } = req.body;
@@ -62,19 +72,52 @@ export const SignUp = async (req, res) => {
   const MatchedEmail = await UserServices.FindOne({
     module: UserModel,
     filter: { Email },
-    select: "-_id",
   });
+
+  if (MatchedEmail?.ConfirmEmail) {
+    throw BadRequstException({ message: "Email not Verifyed" });
+  }
+
   if (MatchedEmail) {
     throw ConflictException({
       status: 409,
       message: "Email already exist",
     });
   }
+
   data.Password = await HashingService.Hash(data.Password);
   data.Phone = await EncryptionService.Encrypt(data.Phone);
 
+  //1. generate otp
+  const otp = await GenerateOTP();
+
+  //2. send otp
+  EmailEvent.emit("SendEmail", {
+    to: Email,
+    subject: EmailSubject.ConfirmEmail,
+    text: "",
+    html: OTP_Templet({ Email, OTP: otp }),
+  });
+
+  //3. storge the otp in redis
+  const CipherOTP = await HashingService.Hash(otp);
+
+  await Hset({
+    key: RedisOTPprefix({ Email }),
+    filds: {
+      CipherOTP,
+      resendCount: 3,
+    },
+    ttl: OTP_TTL,
+  });
+
   const result = await UserServices.InsertOne({ module: UserModel, data });
-  return SuccessRespons({ res, data: result });
+
+  return SuccessRespons({
+    res,
+    massage: "check your Email for Confirmation Code",
+    data: result,
+  });
 };
 // --------------------- Logout ------------------------------
 export const Logout = async (req, res) => {
@@ -177,5 +220,80 @@ export const Google_social_provider = async (req, res) => {
     res,
     message: "signed up with Google Account Successfly ",
     data: Tokens,
+  });
+};
+// ------------------- confirm Email --------------------
+export const ConfirmEmail = async (req, res) => {
+  const { otp, Email } = req.body;
+
+  const { CipherOTP, resendCount } = await Hget_all({
+    key: RedisOTPprefix({ Email }),
+  });
+
+  const commparing = await HashingService.Compare({
+    data: otp,
+    cipher: CipherOTP,
+  });
+
+  if (!commparing) {
+    throw ConflictException({ message: "invaid otp" });
+  }
+
+  const result = await FindOneAndUpdate({
+    module: UserModel,
+    filter: { Email, ConfirmEmail: { $exists: true, $eq: false } },
+    data: { ConfirmEmail: true, $inc: { __v: 1 } },
+  });
+
+  if (!result) {
+    throw BadRequstException({
+      message: "Something Went Wrong , try agin later ... ",
+    });
+  }
+  await del({ key: RedisOTPprefix({ Email }) });
+  SuccessRespons({ res, massage: "Email Confirmed Successfly" });
+};
+// ----------- Resend OTP (limit 3 times ) -------------
+export const ResendOTP = async (req, res) => {
+  // 1. destruct the email that we will resend to it
+  const { Email } = req.body;
+  // 2. check for user if exist and ConfirmEmail is false
+  const user = await FindOne({
+    module: UserModel,
+    filter: { Email, ConfirmEmail: { $exists: true, $eq: false } },
+  });
+  if (!user) throw NotFoundException({ message: "invalid email" });
+  // 3. create new OTP and hash it
+  const NewOTP = GenerateOTP();
+  const CipherOTP = await HashingService.Hash(NewOTP);
+  // 4. check for resend trys remaining
+  const data = await Hget_all({ key: RedisOTPprefix({ Email }) });
+  const resendCount = Number(data.resendCount);
+
+  // 5. replace the old otp in redis with the new hashed one if the count less then 3
+  if (resendCount == 0) {
+    throw BadRequstException({
+      message: "you have Retched the max resend try , try after 2h",
+    });
+  } else {
+    // 6. if resendCount less then 3 , save the new otp and incremnt the resendCount by one
+    await Hset({
+      key: RedisOTPprefix({ Email }),
+      filds: {
+        CipherOTP,
+        resendCount: resendCount - 1,
+      },
+    });
+  }
+  // 7. send email with the new otp
+  EmailEvent.emit("SendEmail", {
+    to: Email,
+    subject: EmailSubject.ConfirmEmail,
+    text: "",
+    html: OTP_Templet({ Email, OTP: NewOTP }),
+  });
+  return SuccessRespons({
+    res,
+    massage: `OTP Has ben Resend , you have: ${resendCount} / 3 try remaining`,
   });
 };

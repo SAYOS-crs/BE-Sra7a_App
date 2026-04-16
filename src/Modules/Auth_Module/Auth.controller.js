@@ -1,10 +1,12 @@
 import { Router } from "express";
 import {
+  ConfirmEmail,
   Google_social_provider,
   Login,
   Logout,
   Logout_Redis,
   refreshToken,
+  ResendOTP,
   SignUp,
 } from "./Auth.service.js";
 import validation from "../../Middlewares/validation.middleware.js";
@@ -28,5 +30,7 @@ router.post(
   Logout_Redis,
 );
 router.post("/Login-Google", Google_social_provider);
+router.patch("/Confirm-Email", ConfirmEmail);
 router.get("/refresh-token", refreshToken);
+router.get("/Resend-OTP", ResendOTP);
 export default router;

@@ -1,5 +1,5 @@
 import { Radis } from "../../DB/radis.connection.js";
-
+// ---------- redis prefixes ----------------
 export const RedisKeyPrefix = ({ userId, jti }) => {
   return `revoke-token-user:${userId}-jti:${jti}`;
 };
@@ -8,6 +8,11 @@ export const RedisUserCredentials = ({ userId }) => {
   return `user:${userId}-CredentialsDate`;
 };
 
+export const RedisOTPprefix = ({ Email }) => {
+  return `Email-Confirmation:${Email}`;
+};
+
+// ---------- redis services---------
 export const set = async ({ key, value, ttl = null }) => {
   try {
     const StringValue =
@@ -54,8 +59,22 @@ export const update = async ({ key, value, ttl = undefined }) => {
 
 export const del = async ({ key }) => {
   try {
-    return Radis.get(key);
+    return Radis.del(key);
   } catch (error) {
     console.log("radis delete error ", error);
   }
+};
+
+export const Hset = async ({ key, filds, ttl = null }) => {
+  const result = await Radis.hSet(key, filds);
+  if (ttl) {
+    await Radis.expire(key, ttl);
+  }
+  return result;
+};
+
+export const Hget_all = async ({ key }) => {
+  const result = await Radis.hGetAll(key);
+
+  return result;
 };

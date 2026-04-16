@@ -26,3 +26,10 @@ export const REFRESH_ADMIN_SIGNATURE = process.env.REFRESH_ADMIN_SIGNATURE;
 export const ACCESS_Token_Time = process.env.ACCESS_Token_Time;
 export const REFRESH_Token_Time = process.env.REFRESH_Token_Time;
 export const Google_ClintID = process.env.CLINT_ID;
+// ---------------------------------
+// ---------------------------------
+// ----- Email service
+export const EMAIL_user = process.env.EMAIL_user;
+export const EMAIL_pass = process.env.EMAIL_pass;
+// ---------- OTP tll
+export const OTP_TTL = process.env.OTP_TTL;

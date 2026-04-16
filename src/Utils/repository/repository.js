@@ -26,6 +26,12 @@ export const FindOneByIdAndUpdate = async ({ module, id, data }) => {
   });
   return await result;
 };
+export const FindOneAndUpdate = async ({ module, filter, data }) => {
+  const result = module.findOneAndUpdate(filter, data, {
+    returnDocument: "after",
+  });
+  return await result;
+};
 
 // ------------------------------------------
 
