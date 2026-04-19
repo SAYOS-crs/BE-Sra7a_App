@@ -38,9 +38,13 @@ import {
   update,
 } from "../../Utils/repository/radis.repository.js";
 import { ACCESS_Token_Time, OTP_TTL } from "../../../config/config.service.js";
-import { GenerateOTP } from "../../Utils/security/otp/otp.service.js";
+import {
+  GenerateOTP,
+  SendOTP,
+  VerifyOTP,
+} from "../../Utils/security/otp/otp.service.js";
 import { EmailEvent } from "../../Utils/email/email.Event.js";
-import { EmailSubject } from "../../Utils/email/email.subject.js";
+import { EmailType } from "../../Utils/email/email.subject.js";
 import OTP_Templet from "../../Utils/email/email.templet.js";
 // ------------------- login end point ---------------------------
 export const Login = async (req, res) => {
@@ -88,28 +92,8 @@ export const SignUp = async (req, res) => {
   data.Password = await HashingService.Hash(data.Password);
   data.Phone = await EncryptionService.Encrypt(data.Phone);
 
-  //1. generate otp
-  const otp = await GenerateOTP();
-
-  //2. send otp
-  EmailEvent.emit("SendEmail", {
-    to: Email,
-    subject: EmailSubject.ConfirmEmail,
-    text: "",
-    html: OTP_Templet({ Email, OTP: otp }),
-  });
-
-  //3. storge the otp in redis
-  const CipherOTP = await HashingService.Hash(otp);
-
-  await Hset({
-    key: RedisOTPprefix({ Email }),
-    filds: {
-      CipherOTP,
-      resendCount: 3,
-    },
-    ttl: OTP_TTL,
-  });
+  // send otp
+  await SendOTP({ Email, OTPtype: EmailType.ConfirmEmail });
 
   const result = await UserServices.InsertOne({ module: UserModel, data });
 
@@ -224,25 +208,14 @@ export const Google_social_provider = async (req, res) => {
 };
 // ------------------- confirm Email --------------------
 export const ConfirmEmail = async (req, res) => {
-  const { otp, Email } = req.body;
+  const { Email, OTP } = req.body;
 
-  const { CipherOTP, resendCount } = await Hget_all({
-    key: RedisOTPprefix({ Email }),
-  });
-
-  const commparing = await HashingService.Compare({
-    data: otp,
-    cipher: CipherOTP,
-  });
-
-  if (!commparing) {
-    throw ConflictException({ message: "invaid otp" });
-  }
+  const { CipherOTP, resendCount } = await VerifyOTP({ Email, OTP });
 
   const result = await FindOneAndUpdate({
     module: UserModel,
     filter: { Email, ConfirmEmail: { $exists: true, $eq: false } },
-    data: { ConfirmEmail: true, $inc: { __v: 1 } },
+    data: { ConfirmEmail: true },
   });
 
   if (!result) {
@@ -250,50 +223,114 @@ export const ConfirmEmail = async (req, res) => {
       message: "Something Went Wrong , try agin later ... ",
     });
   }
-  await del({ key: RedisOTPprefix({ Email }) });
   SuccessRespons({ res, massage: "Email Confirmed Successfly" });
 };
 // ----------- Resend OTP (limit 3 times ) -------------
 export const ResendOTP = async (req, res) => {
-  // 1. destruct the email that we will resend to it
   const { Email } = req.body;
-  // 2. check for user if exist and ConfirmEmail is false
+  // 1. check for user if exist and ConfirmEmail is false
   const user = await FindOne({
     module: UserModel,
     filter: { Email, ConfirmEmail: { $exists: true, $eq: false } },
   });
   if (!user) throw NotFoundException({ message: "invalid email" });
-  // 3. create new OTP and hash it
-  const NewOTP = GenerateOTP();
-  const CipherOTP = await HashingService.Hash(NewOTP);
-  // 4. check for resend trys remaining
-  const data = await Hget_all({ key: RedisOTPprefix({ Email }) });
-  const resendCount = Number(data.resendCount);
 
-  // 5. replace the old otp in redis with the new hashed one if the count less then 3
-  if (resendCount == 0) {
-    throw BadRequstException({
-      message: "you have Retched the max resend try , try after 2h",
-    });
-  } else {
-    // 6. if resendCount less then 3 , save the new otp and incremnt the resendCount by one
-    await Hset({
-      key: RedisOTPprefix({ Email }),
-      filds: {
-        CipherOTP,
-        resendCount: resendCount - 1,
-      },
+  // 2. check for resend trys remaining
+  const data = await Hget_all({ key: RedisOTPprefix({ Email }) });
+  // if ther no otp in redis > taht mean the user want to confirm after the ttl of otp has expired
+  if (!data) {
+    await SendOTP({ Email, OTPtype: EmailType.ConfirmEmail });
+    return SuccessRespons({
+      res,
+      massage: `OTP has been send , check your Email`,
     });
   }
-  // 7. send email with the new otp
-  EmailEvent.emit("SendEmail", {
-    to: Email,
-    subject: EmailSubject.ConfirmEmail,
-    text: "",
-    html: OTP_Templet({ Email, OTP: NewOTP }),
+  const resendCount = Number(data.resendCount);
+
+  // 3. check of Resend count
+  if (resendCount == 0)
+    throw BadRequstException({
+      message: "you have Reached the max resend attempt , try after 30m ",
+    });
+
+  // 4. send otp and Decremnt the Resend by 1
+  await SendOTP({
+    Email,
+    OTPtype: EmailType.ConfirmEmail,
+    resendCount: resendCount - 1,
+  });
+
+  return SuccessRespons({
+    res,
+    massage: `OTP Has ben Resend , You have ${resendCount} resend attempt remaining.`,
+  });
+};
+// ------------------- forget password -------------------
+export const ForgetPassword = async (req, res) => {
+  const { Email } = req.body;
+  const user = await FindOne({ module: UserModel, filter: { Email } });
+  if (!user) throw NotFoundException({ message: "Invalid Email" });
+  await SendOTP({ Email, OTPtype: EmailType.ForgetPasswrd });
+  return SuccessRespons({
+    res,
+    massage: "OTP has been send , check your Email",
+  });
+};
+// ------------------- Reset Password -----------------
+export const ResetPassword = async (req, res) => {
+  const { OTP, newPassword, ConfirmNewPassowrd, Email } = req.body;
+  // 1. verify OTP
+  await VerifyOTP({ Email, OTP });
+  // 2. hash the new password
+  const CipherNewPassword = await HashingService.Hash(newPassword);
+  const CipherConfirmNewPassowrd =
+    await HashingService.Hash(ConfirmNewPassowrd);
+  // 3. replace the old password
+  const result = await FindOneAndUpdate({
+    module: UserModel,
+    filter: { Email, ConfirmEmail: true },
+    data: {
+      Password: CipherNewPassword,
+      ConfirmPassword: CipherConfirmNewPassowrd,
+    },
   });
   return SuccessRespons({
     res,
-    massage: `OTP Has ben Resend , you have: ${resendCount} / 3 try remaining`,
+    massage: "Password reset Successfly",
+    data: result,
+  });
+};
+// ------------------ update password -------------
+export const UpdatePassword = async (req, res) => {
+  const { oldPassword, NewPassword, ConfirmNewPassword } = req.body;
+  // 1. get the old password and compare it
+  const CompareResult = await HashingService.Compare({
+    data: oldPassword,
+    cipher: req.user.Password,
+  });
+  if (!CompareResult) {
+    throw ConflictException({ message: "The old-password does not match" });
+  }
+  // 2. hash the new password
+  const CipherNewPassword = await HashingService.Hash(NewPassword);
+  const CipherConfirmNewPassword =
+    await HashingService.Hash(ConfirmNewPassword);
+  // 3. update the password
+  const result = await FindOneByIdAndUpdate({
+    module: UserModel,
+    id: req.user.id,
+    data: {
+      Password: CipherNewPassword,
+      ConfirmPassword: CipherConfirmNewPassword,
+    },
+  });
+  if (!result) {
+    throw BadRequstException({ message: "error while updating password" });
+  }
+
+  return SuccessRespons({
+    res,
+    massage: "Password Updated Successfly",
+    data: result,
   });
 };

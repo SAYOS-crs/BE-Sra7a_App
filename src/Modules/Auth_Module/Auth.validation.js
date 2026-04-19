@@ -55,3 +55,31 @@ export const LogoutSchema = {
     })
     .unknown(true),
 };
+// --------------- password endpint validation -----------------
+// ---------- forget password
+export const ForgetPasswordSchema = {
+  body: joi.object({
+    Email: generalFilds.Email.required(),
+  }),
+};
+// --------- Reset Password
+export const ResetPasswordSchema = {
+  body: joi.object({
+    Email: generalFilds.Email.required(),
+    newPassword: generalFilds.Password.required(),
+    ConfirmNewPassowrd: joi.ref("newPassword"),
+    OTP: generalFilds.OTP.required(),
+  }),
+};
+// ---------- update password
+export const UpdatePasswordSchema = {
+  body: joi.object({
+    oldPassword: generalFilds.Password.required(),
+    NewPassword: generalFilds.Password.invalid(joi.ref("oldPassword")).messages(
+      {
+        "any.invalid": "new password cant be the same old one",
+      },
+    ),
+    ConfirmNewPassword: joi.ref("NewPassword"),
+  }),
+};

@@ -50,7 +50,7 @@ export const decodeToken = async ({
   // -------------------  3. find by id---------------------------
   const user = await FindOne({
     module: UserModel,
-    filter: { _id: decoded.id },
+    filter: { _id: decoded.id, ConfirmEmail: true },
   });
   // -------------------------------------------------------------
   // -------------------------------------------------------------
