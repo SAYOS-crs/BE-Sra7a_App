@@ -18,6 +18,26 @@ export const FindOne = async ({
 
   return await result;
 };
+export const Find = async ({
+  module,
+  filter,
+  options = undefined,
+  select = "",
+}) => {
+  let result = module.find(filter);
+  if (select.length) {
+    result.select(select);
+    return await result.exec();
+  }
+
+  if (options?.populate) {
+    result.populate(options.populate);
+
+    return await result.exec();
+  }
+
+  return await result;
+};
 
 // --------------------------------------------
 export const InsertOne = async ({ module, data }) => {
