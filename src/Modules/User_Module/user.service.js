@@ -5,6 +5,7 @@ import { set } from "../../Utils/repository/radis.repository.js";
 import {
   FindOne,
   FindOneAndUpdate,
+  FindOneByIdAndDelete,
   FindOneByIdAndUpdate,
 } from "../../Utils/repository/repository.js";
 import {
@@ -181,5 +182,22 @@ export const ReactivateUser = async (req, res) => {
     res,
     massage: "Account Restored Successfly ",
     data: result,
+  });
+};
+// ----
+// ----
+// --------------- Delete User by Admin
+export const DeleteUser = async (req, res) => {
+  const { UserId } = req.params;
+  const DeletedUser = await FindOneByIdAndDelete({
+    module: UserModel,
+    id: UserId,
+  });
+  if (!DeletedUser) {
+    throw NotFoundException({ message: "Not Found User" });
+  }
+  return SuccessRespons({
+    res,
+    massage: `User : ${UserId} , Has been Deleted Successfly`,
   });
 };

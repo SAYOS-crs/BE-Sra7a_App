@@ -6,6 +6,7 @@ import {
   Admin_RestoreUser,
   Self_RestoreUser,
   ReactivateUser,
+  DeleteUser,
 } from "./user.service.js";
 import { Authentication } from "../../Middlewares/authentication.middleware.js";
 import { SignatureType } from "../../Utils/enums/Token.Enum.js";
@@ -55,4 +56,11 @@ router.patch(
 );
 router.post("/self-RestoreUser", Self_RestoreUser);
 router.patch("/Reactivate-User", ReactivateUser);
+// delete user by admin
+router.delete(
+  "/Hard-Delete-User/:UserId",
+  Authentication({ TokenType: SignatureType.AccessToken }),
+  Authorization({ AuthorizedRolles: [RollEnum.Admin] }),
+  DeleteUser,
+);
 export default router;
