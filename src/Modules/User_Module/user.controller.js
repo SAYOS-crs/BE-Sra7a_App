@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { SuspendUser, GetProfile, PatchPhoto } from "./user.service.js";
+import {
+  SuspendUser,
+  GetProfile,
+  PatchPhoto,
+  Admin_RestoreUser,
+  Self_RestoreUser,
+} from "./user.service.js";
 import { Authentication } from "../../Middlewares/authentication.middleware.js";
 import { SignatureType } from "../../Utils/enums/Token.Enum.js";
 import { Authorization } from "../../Middlewares/authorization.middleware.js";
@@ -39,4 +45,12 @@ router.delete(
   Authorization({ AuthorizedRolles: [RollEnum.User, RollEnum.Admin] }),
   SuspendUser,
 );
+// restore user by admin - any admin can restor that user
+router.patch(
+  "/Admin-RestoreUser/:UserId",
+  Authentication({ TokenType: SignatureType.AccessToken }),
+  Authorization({ AuthorizedRolles: [RollEnum.Admin] }),
+  Admin_RestoreUser,
+);
+router.patch("/self-RestoreUser", Self_RestoreUser);
 export default router;

@@ -50,7 +50,7 @@ export const SuspendUser = async (req, res) => {
     },
     // update the FreezedBy & FreezedAt and unset the RestoredBy & RestoredAt becz the user may be got bannd and Restored before
     data: {
-      FreezedBy: Freeze_ID,
+      FreezedBy: req.user.id,
       FreezedAt: Date.now(),
       $unset: {
         RestoredBy: true,
@@ -68,4 +68,30 @@ export const SuspendUser = async (req, res) => {
   });
 };
 // -------------- Restore User --------------
-export const RestoreUser = async (req, res) => {};
+export const Admin_RestoreUser = async (req, res) => {
+  const { UserId } = req.params;
+  const user = await FindOneAndUpdate({
+    module: UserModel,
+    filter: {
+      _id: UserId,
+      FreezedBy: { $exists: true },
+      FreezedAt: { $exists: true },
+    },
+    data: {
+      RestoredAt: Date.now(),
+      RestoredBy: req.user.id,
+      $unset: {
+        FreezedAt: true,
+        FreezedBy: true,
+      },
+    },
+  });
+  if (!user) {
+    throw NotFoundException({
+      message: "User not found or its not Suspended to Restore it !",
+    });
+  }
+
+  return SuccessRespons({ res, massage: `Account Restored Successfly` });
+};
+export const Self_RestoreUser = async (req, res) => {};
