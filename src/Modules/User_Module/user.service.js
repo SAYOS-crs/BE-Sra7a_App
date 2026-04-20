@@ -9,6 +9,7 @@ import {
 } from "../../Utils/repository/repository.js";
 import {
   BadRequstException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
   unauthorizedexception,
@@ -73,11 +74,12 @@ export const SuspendUser = async (req, res) => {
 // -------------- Restore User by admin--------------
 export const Admin_RestoreUser = async (req, res) => {
   const { UserId } = req.params;
+
   const user = await FindOneAndUpdate({
     module: UserModel,
     filter: {
       _id: UserId,
-      FreezedBy: { $exists: true },
+      FreezedBy: { $exists: true, $ne: req.user.id },
       FreezedAt: { $exists: true },
     },
     data: {
@@ -95,7 +97,10 @@ export const Admin_RestoreUser = async (req, res) => {
     });
   }
 
-  return SuccessRespons({ res, massage: `Account Restored Successfly` });
+  return SuccessRespons({
+    res,
+    massage: `Account Restored Successfly by Admin`,
+  });
 };
 // ----
 // ----
@@ -123,7 +128,8 @@ export const Self_RestoreUser = async (req, res) => {
   }
 
   // 3. check if it that same person who Freezed The Account ? if not so hi cant do this action
-  if (user.FreezedBy.id !== user.id) {
+  // + if the FreezedBy not the user + it is admin = dniy it / that include the admin how got suspended by another admin
+  if (user.FreezedBy.id !== user.id && user.FreezedBy.Roll === RollEnum.Admin) {
     throw unauthorizedexception({
       message:
         "Account Suspended by Admin , you dont have permation to excute this action ",
