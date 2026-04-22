@@ -7,6 +7,7 @@ import RadisConnection from "./src/DB/radis.connection.js";
 import OriginesCors from "./src/Utils/cors/cors.js";
 import helmet from "helmet";
 import chalk from "chalk";
+
 const app = express();
 app.use(express.json(), helmet(), cors(OriginesCors()));
 
