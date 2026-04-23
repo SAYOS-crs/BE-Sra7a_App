@@ -18,7 +18,6 @@ import path from "node:path";
 // };
 export const LogRecoreder = ({ fileName }) => {
   const AbsolutePath = path.resolve("./src/logs");
-  console.log(AbsolutePath);
 
   const StreamPath = fs.createWriteStream(
     path.join(AbsolutePath, `${fileName}.log`),

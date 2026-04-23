@@ -9,8 +9,8 @@ import helmet from "helmet";
 import chalk from "chalk";
 
 const app = express();
-app.use(express.json(), helmet(), cors(OriginesCors()));
 
+app.use(express.json(), helmet(), cors(OriginesCors()));
 Bootstrap(app, express);
 DB_Connect();
 RadisConnection();

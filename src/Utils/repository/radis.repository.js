@@ -12,8 +12,11 @@ export const RedisOTPprefix = ({ Email }) => {
   return `Email-Confirmation:${Email}`;
 };
 
+export const RedisIPprefix = (ip) => {
+  return `ip:address:${ip}`;
+};
 // ---------- redis services---------
-export const set = async ({ key, value, ttl = null }) => {
+export const set = async ({ key, value, ttl = null, options = undefined }) => {
   try {
     const StringValue =
       typeof value == "string" ? value : JSON.stringify(value);
@@ -21,6 +24,8 @@ export const set = async ({ key, value, ttl = null }) => {
       return await Radis.set(key, value, {
         expiration: { type: "EX", value: ttl },
       });
+    } else if (options) {
+      return await Radis.set(key, value, options);
     } else {
       return await Radis.set(key, value);
     }
@@ -66,6 +71,7 @@ export const del = async ({ key }) => {
 };
 
 export const Hset = async ({ key, filds, ttl = null }) => {
+  const StringValue = typeof filds == "string" ? filds : JSON.stringify(filds);
   const result = await Radis.hSet(key, filds);
   if (ttl) {
     await Radis.expire(key, ttl);
