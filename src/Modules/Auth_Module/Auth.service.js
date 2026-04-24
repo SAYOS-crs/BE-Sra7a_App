@@ -54,7 +54,7 @@ export const Login = async (req, res) => {
     module: UserModel,
     filter: { Email },
   });
-  if (user.FreezedAt) ForbiddenException({ message: "Account Suspended !" });
+  if (user?.FreezedAt) ForbiddenException({ message: "Account Suspended !" });
   // password check
   const match = await Compare({
     data: Password,

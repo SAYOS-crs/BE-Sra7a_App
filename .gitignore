@@ -1,5 +1,5 @@
 /.vscode
 /node_modules
-config/development.env
-config/production.env
-/Uploudes
+src/Uploudes
+config/.env.dev
+config/.env.prod
