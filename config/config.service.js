@@ -1,7 +1,11 @@
 import dotenv from "dotenv";
 import { resolve } from "node:path";
-dotenv.config({ path: resolve("./config/.env.dev") });
-
+dotenv.config({
+  path: resolve(
+    `./config/${process.env.NODE_ENV == "development" ? ".env.dev" : ".env.prod"}`,
+  ),
+});
+console.log(process.env.NODE_ENV);
 export const PORT = parseInt(process.env.PORT);
 export const DataBase_URI = process.env.DATA_BASE;
 export const Salt = parseInt(process.env.SALT);

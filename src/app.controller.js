@@ -49,7 +49,7 @@ export const limiter = rateLimit({
 
 export default function Bootstrap(app, express) {
   // loger(app, "/Auth", AuthRouter, "auth.log");
-  console.log(process.env.NODE_ENV);
+
   app.set("trust proxy", true);
   app.use(limiter);
   app.use("/a", express.static(path.resolve("./src/Uploudes")));
