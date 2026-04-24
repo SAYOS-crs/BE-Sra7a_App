@@ -53,7 +53,7 @@ export const decodeToken = async ({
     filter: { _id: decoded.id, ConfirmEmail: true },
   });
   // --------------------check for if the user suspended--------
-  if (user.FreezedAt) {
+  if (user?.FreezedAt) {
     throw unauthorizedexception({ message: "Account Suspended" });
   }
   // -------------------------------------------------------------
