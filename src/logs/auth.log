@@ -183,3 +183,6 @@
 156.193.91.83 - - [24/Apr/2026:14:30:43 +0000] "POST /auth/login HTTP/1.1" 200 524 "-" "PostmanRuntime/7.53.0"
 156.193.91.83 - - [24/Apr/2026:14:30:44 +0000] "POST /auth/login HTTP/1.1" 200 524 "-" "PostmanRuntime/7.53.0"
 156.193.91.83 - - [24/Apr/2026:14:30:45 +0000] "POST /auth/login HTTP/1.1" 200 524 "-" "PostmanRuntime/7.53.0"
+::1 - - [24/Apr/2026:16:40:35 +0000] "POST /auth/signup HTTP/1.1" 400 545 "-" "PostmanRuntime/7.53.0"
+::1 - - [24/Apr/2026:16:51:36 +0000] "POST /auth/signup HTTP/1.1" 200 550 "-" "PostmanRuntime/7.53.0"
+::1 - - [24/Apr/2026:17:14:25 +0000] "POST /auth/signup HTTP/1.1" 200 549 "-" "PostmanRuntime/7.53.0"

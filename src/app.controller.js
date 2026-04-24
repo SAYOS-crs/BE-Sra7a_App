@@ -12,7 +12,8 @@ export const limiter = rateLimit({
   limit: async function (req) {
     const { country } = geoip.lookup(req.ip) || {};
     console.log(country);
-    return country == "EG" ? 10 : 1;
+    // return country == "EG" ? 10 : 1;
+    return 10;
   },
 
   legacyHeaders: false,
@@ -49,6 +50,7 @@ export const limiter = rateLimit({
 
 export default function Bootstrap(app, express) {
   // loger(app, "/Auth", AuthRouter, "auth.log");
+  console.log(process.env.NODE_ENV);
   app.set("trust proxy", true);
   app.use(limiter);
   app.use("/a", express.static(path.resolve("./src/Uploudes")));
