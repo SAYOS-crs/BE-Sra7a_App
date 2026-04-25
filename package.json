@@ -31,7 +31,7 @@
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development node --watch app.js",
-    "pro": "cross-env NODE_ENV=production pm2 start app.js -i 0"
+    "prod": "cross-env NODE_ENV=production pm2 start app.js -i 0"
   },
   "repository": {
     "type": "git",
