@@ -52,6 +52,7 @@ export default function Bootstrap(app, express) {
 
   app.set("trust proxy", true);
   app.use(limiter);
+
   app.use("/a", express.static(path.resolve("./src/Uploudes")));
   app.use("/Auth", LogRecoreder({ fileName: "Auth" }), AuthRouter);
   app.use("/User", LogRecoreder({ fileName: "User" }), UserRouter);
